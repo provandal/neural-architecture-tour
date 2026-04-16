@@ -9,5 +9,5 @@
     "build:landing": "node scripts/build-landing.mjs",
     "build:all": "pnpm run build:landing && pnpm -r --if-present build"
   },
-  "packageManager": "pnpm@9.0.0"
+  "packageManager": "pnpm@10.18.1"
 }
