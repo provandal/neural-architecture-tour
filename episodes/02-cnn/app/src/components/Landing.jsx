@@ -1,9 +1,13 @@
 import { useStore } from '../store';
+import { getModel, getTraining } from '../data/loadArtifacts';
 
 export default function Landing() {
   const startTour = useStore((s) => s.startTour);
   const darkMode = useStore((s) => s.darkMode);
   const toggleDarkMode = useStore((s) => s.toggleDarkMode);
+  const artifacts = useStore((s) => s.artifacts);
+  const model = getModel(artifacts);
+  const training = getTraining(artifacts);
 
   // Use the series landing URL when available (GH Pages), otherwise relative up.
   const seriesHref =
@@ -41,12 +45,42 @@ export default function Landing() {
             Why architecture matters. When pixels-as-independent-features fails,
             and how convolution fixes it.
           </p>
-          <p className="text-sm text-[var(--color-text-muted)] mb-10 max-w-lg mx-auto">
-            This is the first built episode of the Neural Architecture Tour. Right
-            now it's a structural scaffold — 3 placeholder stops wired through the
-            tour framework. The interactive visualizations and live MNIST inference
-            land in later milestones.
+          <p className="text-sm text-[var(--color-text-muted)] mb-8 max-w-lg mx-auto">
+            A small CNN trained on MNIST in PyTorch, exported to ONNX, and running
+            in this browser. Stop 2 animates the actual filter evolution across
+            training. Stops 1 and 3 are still placeholder.
           </p>
+
+          {artifacts && (
+            <div className="grid grid-cols-3 gap-3 mb-10 max-w-xl mx-auto text-[13px]">
+              <div className="p-3 rounded border border-[var(--color-border)] bg-[var(--color-surface-alt)]">
+                <div className="text-[10px] font-mono uppercase tracking-wider text-[var(--color-text-muted)] mb-1">
+                  Test accuracy
+                </div>
+                <div className="font-mono text-[var(--color-teal)] font-medium">
+                  {(training.final_test_accuracy * 100).toFixed(2)}%
+                </div>
+              </div>
+              <div className="p-3 rounded border border-[var(--color-border)] bg-[var(--color-surface-alt)]">
+                <div className="text-[10px] font-mono uppercase tracking-wider text-[var(--color-text-muted)] mb-1">
+                  Parameters
+                </div>
+                <div className="font-mono text-[var(--color-text)] font-medium">
+                  {model.parameters?.toLocaleString() ?? '—'}
+                </div>
+              </div>
+              <div className="p-3 rounded border border-[var(--color-border)] bg-[var(--color-surface-alt)]">
+                <div className="text-[10px] font-mono uppercase tracking-wider text-[var(--color-text-muted)] mb-1">
+                  Train time
+                </div>
+                <div className="font-mono text-[var(--color-text)] font-medium">
+                  {training.wall_clock_seconds
+                    ? `${training.wall_clock_seconds.toFixed(0)}s`
+                    : '—'}
+                </div>
+              </div>
+            </div>
+          )}
 
           <button
             onClick={startTour}
@@ -56,7 +90,7 @@ export default function Landing() {
           </button>
 
           <p className="text-xs text-[var(--color-text-muted)] mt-4 font-mono">
-            3 stops · placeholder content · more soon
+            3 stops · scrubber animation in Stop 2
           </p>
         </div>
       </div>
