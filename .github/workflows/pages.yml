@@ -20,18 +20,45 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: 'pnpm'
 
-      # Assemble the published site under dist/.
-      # For M0 this is just the landing page. As episodes are built,
-      # extend this step to `pnpm -r build` and copy each
-      # episodes/<NN-slug>/app/dist into dist/<epN-slug>/.
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Build episode apps
+        run: |
+          set -e
+          shopt -s nullglob
+          for ep_dir in episodes/*/app; do
+            [ -f "$ep_dir/package.json" ] || continue
+            slug=$(basename "$(dirname "$ep_dir")")
+            echo "::group::Building $slug"
+            (cd "$ep_dir" && VITE_BASE_PATH="/neural-architecture-tour/${slug}/" pnpm build)
+            echo "::endgroup::"
+          done
+
       - name: Assemble site
         run: |
+          set -e
+          shopt -s nullglob
           mkdir -p dist
           cp -r landing/* dist/
+          for ep_dir in episodes/*/app; do
+            [ -d "$ep_dir/dist" ] || continue
+            slug=$(basename "$(dirname "$ep_dir")")
+            mkdir -p "dist/${slug}"
+            cp -r "$ep_dir/dist/"* "dist/${slug}/"
+            echo "Assembled $slug"
+          done
+          echo "--- dist tree ---"
+          find dist -maxdepth 3 -type f | head -40
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
