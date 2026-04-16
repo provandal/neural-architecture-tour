@@ -1,0 +1,13 @@
+{
+  "name": "neural-architecture-tour",
+  "private": true,
+  "version": "0.0.0",
+  "description": "A hands-on series for building intuition about neural network architectures",
+  "scripts": {
+    "build": "pnpm -r --if-present build",
+    "dev:landing": "echo 'Open landing/index.html in a browser (static page, no build step)'",
+    "build:landing": "node scripts/build-landing.mjs",
+    "build:all": "pnpm run build:landing && pnpm -r --if-present build"
+  },
+  "packageManager": "pnpm@9.0.0"
+}
