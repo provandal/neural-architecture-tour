@@ -54,11 +54,13 @@ export const FILTERS = {
   },
 };
 
-function InputGrid({ image, window }) {
+function InputGrid({ image, window, onCellClick }) {
   const rows = image.length;
   const cols = image[0].length;
   const W = cols * INPUT_CELL;
   const H = rows * INPUT_CELL;
+  const maxTopLeftRow = rows - 3;
+  const maxTopLeftCol = cols - 3;
 
   return (
     <svg width={W} height={H} className="rounded border border-[var(--color-border)]">
@@ -73,6 +75,14 @@ function InputGrid({ image, window }) {
             fill={grayscaleColor(v)}
             stroke="var(--color-border-light)"
             strokeWidth={1}
+            className="cursor-pointer"
+            onClick={() => {
+              // Clicking anywhere on the input sets the window top-left to the
+              // clicked cell, clamped so the 3x3 window always fits.
+              const clampedRow = Math.max(0, Math.min(r, maxTopLeftRow));
+              const clampedCol = Math.max(0, Math.min(c, maxTopLeftCol));
+              onCellClick({ row: clampedRow, col: clampedCol });
+            }}
           />
         ))
       )}
@@ -194,9 +204,9 @@ export default function ConvolutionMachine({
     <div className="space-y-5">
       <div>
         <div className="text-[11px] font-mono uppercase tracking-wider text-[var(--color-text-muted)] mb-2">
-          Input image (5 × 5)
+          Input image (5 × 5) — click anywhere to move the yellow window
         </div>
-        <InputGrid image={image} window={window} />
+        <InputGrid image={image} window={window} onCellClick={onSelect} />
       </div>
 
       <div>

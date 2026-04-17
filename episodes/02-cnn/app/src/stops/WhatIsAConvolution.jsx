@@ -4,6 +4,7 @@ import { convolveValid, extractPatch, elementwiseProduct } from '../lib/conv';
 import { divergentColor, maxAbsOf } from '../lib/viz';
 
 const MINI_CELL = 28;
+const BIG_CELL = 52;
 
 function MiniGrid({ matrix, maxAbs }) {
   const m = maxAbs ?? maxAbsOf(matrix);
@@ -36,6 +37,98 @@ function MiniGrid({ matrix, maxAbs }) {
         ))
       )}
     </svg>
+  );
+}
+
+// Shows the vertical-edge filter with column background tints and labels.
+// Used in the anatomy section before the learner meets the full interactive.
+function AnnotatedVerticalEdgeFilter() {
+  const rows = [
+    [-1, 0, 1],
+    [-1, 0, 1],
+    [-1, 0, 1],
+  ];
+  const colTints = ['rgba(226, 75, 74, 0.15)', 'transparent', 'rgba(29, 158, 117, 0.15)'];
+  const colLabels = ['Subtract', 'Ignore', 'Add'];
+  const height = rows.length * BIG_CELL;
+  const width = rows[0].length * BIG_CELL;
+
+  return (
+    <div className="inline-block">
+      <div className="flex" style={{ width }}>
+        {colLabels.map((label, i) => (
+          <div
+            key={i}
+            className="text-[10px] font-mono uppercase tracking-wider text-[var(--color-text-muted)] text-center pb-1"
+            style={{ width: BIG_CELL }}
+          >
+            {label}
+          </div>
+        ))}
+      </div>
+      <svg width={width} height={height} className="rounded border border-[var(--color-border)]">
+        {rows.map((row, r) =>
+          row.map((v, c) => (
+            <g key={`${r}-${c}`}>
+              <rect
+                x={c * BIG_CELL}
+                y={r * BIG_CELL}
+                width={BIG_CELL}
+                height={BIG_CELL}
+                fill={colTints[c]}
+                stroke="var(--color-border-light)"
+              />
+              <text
+                x={c * BIG_CELL + BIG_CELL / 2}
+                y={r * BIG_CELL + BIG_CELL / 2 + 6}
+                textAnchor="middle"
+                fontSize={18}
+                fontFamily="var(--font-mono)"
+                fill="var(--color-text)"
+                fontWeight={500}
+              >
+                {v > 0 ? `+${v}` : v}
+              </text>
+            </g>
+          ))
+        )}
+      </svg>
+    </div>
+  );
+}
+
+// One worked example of the vertical-edge filter applied to a specific patch.
+// Shows patch ⊙ filter = products → sum, with a plain-language interpretation.
+function WorkedExample({ patch, label, interpretation, tone }) {
+  const filter = FILTERS['vertical-edge'].kernel;
+  const products = elementwiseProduct(patch, filter);
+  const sum = products.flat().reduce((a, b) => a + b, 0);
+  const toneColor = {
+    positive: 'var(--color-teal)',
+    negative: 'var(--color-red)',
+    neutral: 'var(--color-text-muted)',
+  }[tone || 'neutral'];
+
+  return (
+    <div className="border border-[var(--color-border)] rounded-lg p-4 bg-[var(--color-surface-alt)]">
+      <div className="text-[11px] font-mono uppercase tracking-wider text-[var(--color-text-muted)] mb-3">
+        {label}
+      </div>
+      <div className="flex items-center gap-3 flex-wrap mb-3">
+        <MiniGrid matrix={patch} maxAbs={1} />
+        <span className="text-xl font-mono text-[var(--color-text-muted)]">⊙</span>
+        <MiniGrid matrix={filter} />
+        <span className="text-xl font-mono text-[var(--color-text-muted)]">=</span>
+        <MiniGrid matrix={products} />
+        <span className="text-xl font-mono text-[var(--color-text-muted)]">→ sum</span>
+        <span style={{ color: toneColor }} className="text-3xl font-mono font-semibold">
+          {formatValue(sum)}
+        </span>
+      </div>
+      <div style={{ color: toneColor }} className="text-[13px]">
+        {interpretation}
+      </div>
+    </div>
   );
 }
 
@@ -137,6 +230,87 @@ export default function WhatIsAConvolution() {
         </p>
       </section>
 
+      {/* Anatomy of a filter */}
+      <section className="space-y-5">
+        <div>
+          <div className="text-[11px] font-mono uppercase tracking-wider text-[var(--color-primary-light)] mb-2">
+            Anatomy of a filter
+          </div>
+          <h3 className="text-xl font-semibold tracking-tight mb-3">
+            Nine numbers and a rule.
+          </h3>
+          <p className="text-[15px] leading-relaxed text-[var(--color-text-secondary)]">
+            A filter is a small grid of numbers. Nine of them, arranged in a 3
+            by 3 pattern. Each number is a weight. When the filter lands on an
+            image patch, the weight at position (r, c) multiplies the pixel at
+            position (r, c) of the patch. All nine products are summed into a
+            single output number. The numbers in the filter are what define
+            what pattern it detects.
+          </p>
+          <p className="text-[15px] leading-relaxed text-[var(--color-text-secondary)] mt-3">
+            Look at one. This is the vertical-edge filter, laid out with its
+            three columns labelled by what each one does:
+          </p>
+        </div>
+
+        <div className="flex justify-center">
+          <AnnotatedVerticalEdgeFilter />
+        </div>
+
+        <div>
+          <p className="text-[15px] leading-relaxed text-[var(--color-text-secondary)]">
+            Read the filter column by column. The left column is all
+            <span className="font-mono"> -1</span>: the three pixels that land
+            under this column get subtracted. The middle column is all
+            <span className="font-mono"> 0</span>: whatever pixels land under
+            this column contribute nothing. The right column is all
+            <span className="font-mono"> +1</span>: those three pixels get
+            added.
+          </p>
+          <p className="text-[15px] leading-relaxed text-[var(--color-text-secondary)] mt-3">
+            The rule that falls out: if the right side of the patch is brighter
+            than the left, the sum is positive. If the left is brighter, the sum
+            is negative. If the two sides are equal, the sum is zero. The filter
+            is asking one question: "Is the image getting brighter as you move
+            rightward?" The nine numbers are how the question is spelled.
+          </p>
+        </div>
+
+        <div>
+          <p className="text-[15px] leading-relaxed text-[var(--color-text-secondary)] mb-4">
+            Here is the same filter applied to two 3 by 3 patches. Same nine
+            numbers. Opposite inputs.
+          </p>
+          <div className="space-y-4">
+            <WorkedExample
+              patch={[
+                [0, 0, 1],
+                [0, 0, 1],
+                [0, 0, 1],
+              ]}
+              label="Patch A · dark on left, bright on right"
+              interpretation="Positive result. The filter is telling you yes, the right side is brighter than the left. A vertical edge, going dark-to-light rightward, lives here."
+              tone="positive"
+            />
+            <WorkedExample
+              patch={[
+                [1, 0, 0],
+                [1, 0, 0],
+                [1, 0, 0],
+              ]}
+              label="Patch B · bright on left, dark on right"
+              interpretation="Negative result. Same filter, opposite answer. The filter cares about direction, not just whether an edge is present. A light-to-dark transition gives a negative sum."
+              tone="negative"
+            />
+          </div>
+          <p className="text-[15px] leading-relaxed text-[var(--color-text-secondary)] mt-4">
+            The other three presets in the machine below work the same way: nine
+            numbers, a rule that those numbers encode. Click each one to see what
+            it is built to detect.
+          </p>
+        </div>
+      </section>
+
       {/* Interactive: two-column */}
       <section className="grid grid-cols-1 lg:grid-cols-[auto_1fr] gap-10">
         <div>
@@ -154,12 +328,14 @@ export default function WhatIsAConvolution() {
         <div className="space-y-5">
           <div>
             <div className="text-[11px] font-mono uppercase tracking-wider text-[var(--color-text-muted)] mb-1">
-              Instructions
+              How to use this
             </div>
             <p className="text-[14px] text-[var(--color-text-secondary)]">
-              Pick a filter on the left. The output already shows what that
-              filter produces everywhere on the input. Click any output cell to
-              see the nine numbers it came from.
+              Pick a filter from the four buttons. The output grid already shows
+              what that filter produces everywhere on the input. To see how any
+              single output cell was computed, either click the output cell
+              directly, or click anywhere on the input image to move the yellow
+              window. The verdict box updates live.
             </p>
           </div>
 
