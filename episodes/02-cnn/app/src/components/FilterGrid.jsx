@@ -1,30 +1,11 @@
 // Render the 8 first-layer conv filters as small heatmaps.
 // Input: filters shaped [8, 1, 3, 3] as a nested number array.
 
-function filterColor(value, maxAbs) {
-  // Blue (negative) → near-white (zero) → red (positive).
-  const t = maxAbs === 0 ? 0 : value / maxAbs;        // -1..1
-  if (t >= 0) {
-    const r = 255;
-    const g = Math.round(255 - 200 * t);
-    const b = Math.round(255 - 200 * t);
-    return `rgb(${r}, ${g}, ${b})`;
-  }
-  const r = Math.round(255 + 200 * t);                // t is negative
-  const g = Math.round(255 + 150 * t);
-  const b = 255;
-  return `rgb(${r}, ${g}, ${b})`;
-}
+import { divergentColor, maxAbsOf } from '../lib/viz';
 
 function SingleFilter({ filter, label }) {
-  // filter shape: [1, 3, 3] → grab channel 0
   const grid = filter[0];
-  let maxAbs = 0;
-  for (const row of grid) {
-    for (const v of row) {
-      if (Math.abs(v) > maxAbs) maxAbs = Math.abs(v);
-    }
-  }
+  const maxAbs = maxAbsOf(grid);
 
   const cell = 26;
   const size = cell * 3;
@@ -40,7 +21,7 @@ function SingleFilter({ filter, label }) {
               y={ry * cell}
               width={cell}
               height={cell}
-              fill={filterColor(value, maxAbs)}
+              fill={divergentColor(value, maxAbs)}
             />
           ))
         )}
